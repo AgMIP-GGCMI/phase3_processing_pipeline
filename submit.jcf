@@ -1,0 +1,18 @@
+#!/bin/bash
+
+#SBATCH --job-name=time_adjustment
+#SBATCH --output=logs/time_adjustment_%j.out
+#SBATCH --error=logs/time_adjustment_%j.err
+#SBATCH --time=15:00:00
+#SBATCH --qos=short
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem-per-cpu=2G
+#SBATCH --mail-type=end,fail
+
+. ~/.bashprofile2
+
+ml > logs/modules_loaded.log
+printenv > logs/printenv.log
+
+Rscript /p/projects/macmit/data/GGCMI/phase3/processing_pipeline/time_adjustment.R ggcm
