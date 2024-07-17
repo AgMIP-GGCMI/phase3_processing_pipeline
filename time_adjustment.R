@@ -58,25 +58,19 @@ adjust_temporal_vec <- function(vec, ntimesteps, start_year) {
   first_valid_id <- which(!is.na(vec))[1]
   last_valid_id <- which(!is.na(vec))[length(which(!is.na(vec)))]
 
-  #diff <- vec[first_valid_id] - start_year
   # calculate vec index for the first valid value in vec c(start_year:(start_year + ntimesteps))
   sindex <- which(start_year:(start_year + ntimesteps -1) == vec[first_valid_id])
   if(length(sindex) == 0){
     return(list(to=c(1:ntimesteps), from=c(1:ntimesteps)))
   }
 
-  #eindex <- which(start_year:(start_year + ntimesteps -1) == vec[last_valid_id])
   eindex <-c(last_valid_id - first_valid_id + sindex)
   # check while eindex is larger than ntimesteps, reduce eindex and last_valid_id by 1
   while (eindex > ntimesteps) {
     eindex <- eindex - 1
     last_valid_id <- last_valid_id - 1
   }
-  #adjusted_vec <- index:(index + last_valid_id - first_valid_id)
   adjusted_vec <- sindex:eindex	
-  #if (length(adjusted_vec) < ntimesteps) {
-  #  adjusted_vec <- c(adjusted_vec, rep(NA, ntimesteps - length(adjusted_vec)))
-  #}
   # fine to return vectors that are shorter than original ntimesteps
   return(list(to=adjusted_vec, from=c(first_valid_id:last_valid_id)))
 
@@ -170,11 +164,6 @@ main <- function(modelname, climate_forcing, bias_adjustment, climate_scenario,
     }
   }
 
-  # the values in the correct position in the 3D array
-  #adjusted_vecs <- apply(harvyear, c(1, 2), adjust_temporal_vec, ntimesteps, sy)
-  #var_adjusted <- apply(var, c(1, 2), function(x) x[1:length(adjusted_vecs[[1, 1]])])
-  #var_adjusted <- array(var_adjusted, dim = dim(var_adjusted))
-  
   # create new file name for the adjusted netcdf file
   file_name_adj <- gsub(".nc", "_calendar-year-adjusted.nc", file_name)
   # create new directory for the adjusted netcdf file if it does not exist
@@ -204,40 +193,6 @@ main <- function(modelname, climate_forcing, bias_adjustment, climate_scenario,
   time_vals <- ncvar_get(nc, varid = "time")
   # create ncvar object for time
   dim_time <- ncdim_def("time", gsub("growing seasons", "years", time_atts$units), time_vals)
-  # create ncvar object for the adjusted variable
-
-# detour via cdo to compress the file is not faster than using the ncdf4 compression
-# but takes a few seconds longer (90 vs. 84s)
-# Write the file without compression
-# start_time_without_compression <- system.time({
-#   ncv <- ncvar_def(name = paste(variable, crop, irrigation, sep = "-"), dim = list(dim_lon, dim_lat, dim_time),
-#     missval = var_atts$'_FillValue', prec = "double",
-#     units = var_atts$units, longname = var_atts$long_name,
-#     compression = 1, verbose = FALSE)
-  
-#   nc_adj <- nc_create(paste(dir_adj, file_name_adj, sep = "/"), list(ncv), verbose = FALSE)
-#   ncvar_put(nc_adj, varid =ncv, var_adjusted, start = c(1, 1, 1), count = c(-1, -1, -1))
-# })
-# nc_close(nc_adj)
-
-# Compress the file using CDO or NCO
-# compression_time <- system.time({
-#   system(paste("cdo -z zip_9 copy ", paste(dir_adj, file_name_adj, sep = "/"), paste0(dir_adj, "/cdovariant_", file_name_adj))) 
-# })
-# Write the file with compression
-# start_time_with_compression <- system.time({
-#   ncv <- ncvar_def(name = paste(variable, crop, irrigation, sep = "-"), dim = list(dim_lon, dim_lat, dim_time),
-#     missval = var_atts$'_FillValue', prec = "double",
-#     units = var_atts$units, longname = var_atts$long_name,
-#     compression = 9, verbose = FALSE)
-  
-#   nc_adj <- nc_create(paste(dir_adj, file_name_adj, sep = "/"), list(ncv), verbose = FALSE)
-#   ncvar_put(nc_adj, varid =ncv, var_adjusted, start = c(1, 1, 1), count = c(-1, -1, -1))
-# })
-
-# Print the times
-# print(paste("Time with compression: ", start_time_with_compression[3]))
-# print(paste("Time without compression: ", start_time_without_compression[3] + compression_time[3], "of which compression time: ", compression_time[3]))
 
   # catch missing `long_name` attribute for PROMET
   if (is.null(var_atts$long_name)) {
@@ -290,18 +245,6 @@ main <- function(modelname, climate_forcing, bias_adjustment, climate_scenario,
       }
     })
   }
-
-    # loop through all i/j combinations and check if the values in var_adjusted are correct
-#    for (i in 1:nc$dim$lon$len) {
-#      for (j in 1:nc$dim$lat$len) {
-#        if(harvyear2[i, j, 1] == 1850) {
-#          if(is.na(var_adjusted[i, j, 1])) {
-#            print(paste("i:", i, "j:", j, "harvyear:", harvyear2[i, j, 1], "value:", var_adjusted[i, j, 1]))
-#          }
-#        }
-#      }
-#    }
-#  })
   
 }
 
